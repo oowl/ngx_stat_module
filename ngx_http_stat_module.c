@@ -1,6 +1,7 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include <ngx_http.h>
+#include "ngx_stat.h"
 
 #define NGX_MAX_SHARE_MEMORY_POOL_NUM   256
 
@@ -151,7 +152,7 @@ ngx_http_stat_handler(ngx_http_request_t *r)
 
     status_len = ngx_http_stat_slab_stat(r->pool, status);
     
-    size = sizeof("No shpool\n") - 1;
+    size = sizeof("SHM SLAB\n") - 1;
     for (ngx_uint_t i = 0; i < status_len; i++) {
         size += NGX_SLAB_SHM_SIZE + status[i].name->len;
         size += NGX_SLAB_SUMMARY_SIZE + status[i].slot * NGX_SLAB_SLOT_ENTRY_SIZE;
@@ -165,6 +166,8 @@ ngx_http_stat_handler(ngx_http_request_t *r)
     out.buf = b;
     out.next = NULL;
 
+    b->last = ngx_cpymem(b->last, "SHM SLAB\n",
+                        sizeof("SHM SLAB\n") - 1);
 
     for (ngx_uint_t i = 0; i < status_len; i++) {
         b->last = ngx_sprintf(b->last, NGX_SLAB_SHM_FORMAT, status[i].name);
@@ -176,16 +179,32 @@ ngx_http_stat_handler(ngx_http_request_t *r)
         }
     }
 
-    if (status_len == 0) {
-        b->last = ngx_cpymem(b->last, "No shpool\n",
-                         sizeof("No shpool\n") - 1);
-    }
-
-    r->headers_out.status = NGX_HTTP_OK;
-    r->headers_out.content_length_n = b->last - b->pos;
-
     b->memory = 1;
     b->last_buf = (r == r->main) ? 1 : 0;
+
+    r->headers_out.content_length_n += b->last - b->pos;
+
+#if (NGX_DEBUG_POOL)
+    ngx_chain_t                 *chain;
+    b = ngx_pcalloc(r->pool, sizeof(ngx_buf_t));
+    if (b == NULL) {
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    if (ngx_stat_palloc_stat_get(r->pool, b) == NGX_ERROR) {
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    chain = ngx_alloc_chain_link(r->pool);
+    chain->buf = b;
+    chain->next = NULL;
+
+    out.next = chain;
+
+    r->headers_out.content_length_n += b->last - b->pos;
+#endif
+
+    r->headers_out.status = NGX_HTTP_OK;
 
     rc = ngx_http_send_header(r);
 
