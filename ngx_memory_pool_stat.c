@@ -16,8 +16,8 @@ ngx_stat_palloc_stat_get(ngx_pool_t *pool, ngx_buf_t *b)
 #define NGX_POOL_PID_FORMAT     "pid:%P\n"
 #define NGX_POOL_ENTRY_SIZE     (48 /* func */ + 12 * 4 + sizeof("size: num: cnum: lnum: \n") - 1)
 #define NGX_POOL_ENTRY_FORMAT   "size:%12z num:%12z cnum:%12z lnum:%12z %s\n"
-#define NGX_POOL_SUMMARY_SIZE   (12 * 4 + sizeof("size: num: cnum: lnum: [SUMMARY]\n") - 1)
-#define NGX_POOL_SUMMARY_FORMAT "size:%10z%2s num:%12z cnum:%12z lnum:%12z [SUMMARY]\n"
+#define NGX_POOL_SUMMARY_SIZE   (12 * 4 + sizeof("size: num: cnum: lnum: [SUMMARY]\n\n") - 1)
+#define NGX_POOL_SUMMARY_FORMAT "size:%10z%2s num:%12z cnum:%12z lnum:%12z [SUMMARY]\n\n"
 
     size = NGX_POOL_PID_SIZE + ngx_pool_stats_num * NGX_POOL_ENTRY_SIZE
            + NGX_POOL_SUMMARY_SIZE + sizeof("MEM POOL\n") - 1;
@@ -64,7 +64,6 @@ ngx_stat_palloc_stat_get(ngx_pool_t *pool, ngx_buf_t *b)
 
     b->last = p;
     b->memory = 1;
-    b->last_buf = 1;
 
     return NGX_OK;
 }

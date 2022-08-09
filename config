@@ -2,7 +2,7 @@
 ngx_addon_name=ngx_http_stat_module
 HTTP_MODULES="$HTTP_MODULES ngx_http_stat_module"
 CORE_DEPS="$CORE_DEPS $ngx_addon_dir/ngx_stat.h"
-NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/ngx_memory_pool.c $ngx_addon_dir/ngx_http_stat_module.c"
+NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/ngx_memory_pool_stat.c $ngx_addon_dir/ngx_timer_stat.c $ngx_addon_dir/ngx_http_stat_module.c"
 
 CORE_DEPS=`echo "$CORE_DEPS" | sed "s/[^ \n\t]*ngx_palloc.h//g"`
 CORE_DEPS="$CORE_DEPS $ngx_addon_dir/ngx_palloc.h"

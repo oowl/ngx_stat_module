@@ -5,3 +5,5 @@
 ngx_int_t
 ngx_stat_palloc_stat_get(ngx_pool_t *pool, ngx_buf_t *b);
 #endif
+ngx_int_t
+ngx_stat_timer_get(ngx_pool_t *pool, ngx_buf_t *b);

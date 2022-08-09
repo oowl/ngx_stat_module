@@ -157,6 +157,7 @@ ngx_http_stat_handler(ngx_http_request_t *r)
         size += NGX_SLAB_SHM_SIZE + status[i].name->len;
         size += NGX_SLAB_SUMMARY_SIZE + status[i].slot * NGX_SLAB_SLOT_ENTRY_SIZE;
     }
+    size += 1;
 
     b = ngx_create_temp_buf(r->pool, size);
     if (b == NULL) {
@@ -179,13 +180,17 @@ ngx_http_stat_handler(ngx_http_request_t *r)
         }
     }
 
+    b->last = ngx_cpymem(b->last, "\n",
+                        sizeof("\n") - 1);
+
     b->memory = 1;
     b->last_buf = (r == r->main) ? 1 : 0;
 
     r->headers_out.content_length_n += b->last - b->pos;
 
-#if (NGX_DEBUG_POOL)
     ngx_chain_t                 *chain;
+
+#if (NGX_DEBUG_POOL)
     b = ngx_pcalloc(r->pool, sizeof(ngx_buf_t));
     if (b == NULL) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
@@ -203,6 +208,24 @@ ngx_http_stat_handler(ngx_http_request_t *r)
 
     r->headers_out.content_length_n += b->last - b->pos;
 #endif
+
+    b = ngx_pcalloc(r->pool, sizeof(ngx_buf_t));
+    if (b == NULL) {
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    if (ngx_stat_timer_get(r->pool, b) == NGX_ERROR) {
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    chain = ngx_alloc_chain_link(r->pool);
+    chain->buf = b;
+    chain->next = NULL;
+
+    b->last_buf = 1;
+    out.next->next = chain;
+
+    r->headers_out.content_length_n += b->last - b->pos;
 
     r->headers_out.status = NGX_HTTP_OK;
 
