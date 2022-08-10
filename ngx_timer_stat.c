@@ -50,7 +50,7 @@ ngx_stat_timer_get(ngx_pool_t *pool, ngx_buf_t *b)
                                 "         data: %p\n"           \
                                 "      handler: %p\n"           \
                                 "       action: %s\n"
-#define NGX_TIMER_ENTRY_FUNC_FORMAT  " handler_func: %p\n"
+#define NGX_TIMER_ENTRY_FUNC_FORMAT  " handler_func: %pF \n"
 #define NGX_TIMER_ENTRY_FUNC_SIZE   (sizeof(NGX_TIMER_ENTRY_FORMAT) + NGX_TIME_STAT_MAX_FUNC_NAME)
 
     root = ngx_event_timer_rbtree.root;
@@ -83,24 +83,18 @@ ngx_stat_timer_get(ngx_pool_t *pool, ngx_buf_t *b)
         ev = (ngx_event_t *) ((char *) node - (intptr_t)&((ngx_event_t *) 0x0)->timer);
 
          /* entry format of timer and ev */
-        void *buffer[1];
-        buffer[0] = ev->handler;
-        char **func_names;
-        func_names = backtrace_symbols(buffer, 1);
 
         timer = (ngx_msec_int_t) (node->key - ngx_current_msec);
 
         p = ngx_snprintf(p, NGX_TIMER_ENTRY_SIZE, NGX_TIMER_ENTRY_FORMAT,
                          i, node, timer, ev, ev->data, ev->handler,
                          (ev->log->action != NULL) ? ev->log->action : "");
-        if (func_names[0] != NULL) {
-            p = ngx_snprintf(p, NGX_TIMER_ENTRY_FUNC_SIZE, NGX_TIMER_ENTRY_FUNC_FORMAT, func_names[0]);
-        }
+        p = ngx_snprintf(p, NGX_TIMER_ENTRY_FUNC_SIZE, NGX_TIMER_ENTRY_FUNC_FORMAT, ev->handler);
     }
 
     ngx_array_destroy(array);
 
-    p[-1] = '\n';  /* make sure last char is newline */
+    p = ngx_cpymem(p, "\n", sizeof("\n") - 1);
 
     b->last = p;
     b->memory = 1;

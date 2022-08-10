@@ -209,6 +209,7 @@ ngx_http_stat_handler(ngx_http_request_t *r)
     r->headers_out.content_length_n += b->last - b->pos;
 #endif
 
+    // timer
     b = ngx_pcalloc(r->pool, sizeof(ngx_buf_t));
     if (b == NULL) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
@@ -222,8 +223,26 @@ ngx_http_stat_handler(ngx_http_request_t *r)
     chain->buf = b;
     chain->next = NULL;
 
-    b->last_buf = 1;
     out.next->next = chain;
+
+    r->headers_out.content_length_n += b->last - b->pos;
+
+    // thread pool
+    b = ngx_pcalloc(r->pool, sizeof(ngx_buf_t));
+    if (b == NULL) {
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    if (ngx_stat_thread_pool_get(r->pool, b) == NGX_ERROR) {
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    chain = ngx_alloc_chain_link(r->pool);
+    chain->buf = b;
+    chain->next = NULL;
+
+    b->last_buf = 1;
+    out.next->next->next = chain;
 
     r->headers_out.content_length_n += b->last - b->pos;
 
